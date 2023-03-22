@@ -1,3 +1,5 @@
+import os.path
+
 from apikey import APIKey
 import requests
 import json
@@ -48,3 +50,16 @@ class ShazamManager:
         querystring = {"id": album_id, "l": "en-US"}
 
         return self.get_from_api(url, querystring)
+
+    @staticmethod
+    def get_album_artwork(filepath, song_details):
+        img_url = song_details['images']['coverart']
+        base_name = os.path.basename(filepath)
+        base_name_no_ext = base_name[:base_name.rindex('.')]
+        dir_name = os.path.dirname(filepath)
+
+        jpg_path = os.path.join(dir_name, base_name_no_ext + '.jpg')
+
+        img_data = requests.get(img_url).content
+        with open(jpg_path, 'wb') as handler:
+            handler.write(img_data)

@@ -1,22 +1,14 @@
 import os
 import music_tag
-
-# file = music_tag.load_file("C:\\Users\\bennu\\OneDrive\\Desktop\\testbed.mp3")
-# file['albumartist'] = "test2"
-# file['artist'] = "test"
-# file.save()
-
 # delete all raw files in directory for cleanup
-# methods to write fields given the results dicts from shazam
 #maybe one for album artwork? would be cool
-
 
 def music_file_with_missing_attributes(filepath):
     if os.path.splitext(filepath)[1] != '.mp3':
         return False
 
     file = music_tag.load_file(filepath)
-    for key in ["artist", "albumartist", "album"]:
+    for key in ["title", "artist", "albumartist", "album"]:
         if not field_is_valid(file[key]):
             return True
     return False
@@ -33,3 +25,26 @@ def find_candidate_files(path, filter_fcn=music_file_with_missing_attributes):
             if filter_fcn(full_path):
                 yield full_path
 
+
+def write_file_metadata(filepath, song_details, album_details):
+
+    file = music_tag.load_file(filepath)
+    file['artist'] = album_details['data'][0]['attributes']['artistName']
+    file['albumartist'] = album_details['data'][0]['attributes']['artistName']
+    file['title'] = song_details['title']
+    file['album'] = album_details['data'][0]['attributes']['name']
+    file.save()
+
+
+def rename_file(filepath, song_details):
+    working_dir = os.path.dirname(filepath)
+    os.rename(filepath, os.path.join(working_dir, song_details['title'] + '.mp3'))
+
+
+def cleanup_raw_files():
+    curr_dir = os.path.dirname(os.path.realpath(__file__))
+
+    for filename in os.listdir(curr_dir):
+        if filename.endswith('.raw'):
+            # print(filename)
+            os.remove(os.path.join(curr_dir, filename))
