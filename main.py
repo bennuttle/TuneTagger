@@ -1,6 +1,6 @@
 from shazammanager import ShazamManager
 from audiomanager import bytestream_from_unknown_mp3
-from filemanager import find_candidate_files, write_file_metadata, rename_file, cleanup_raw_files
+from filemanager import find_candidate_files, write_file_metadata, rename_file, cleanup_raw_files, add_album_artwork, cleanup_jpg_files
 
 
 sm = ShazamManager()
@@ -13,9 +13,12 @@ for filepath in find_candidate_files("C:\\Users\\bennu\\OneDrive\\Desktop\\test_
     album_details = sm.get_album_details_from_album_id(album_id)
 
     sm.get_album_artwork(filepath, song_details)
-    # write_file_metadata(filepath, song_details, album_details)
-    # rename_file(filepath, song_details)
+    write_file_metadata(filepath, song_details, album_details)
+    add_album_artwork(filepath)
+    rename_file(filepath, song_details)
+
 
 cleanup_raw_files()
+cleanup_jpg_files("C:\\Users\\bennu\\OneDrive\\Desktop\\test_dir")
 
 
