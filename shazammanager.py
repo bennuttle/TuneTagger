@@ -25,13 +25,13 @@ class ShazamManager:
     def get_from_api(self, endpoint_url, querystring):
         response = requests.request("GET", endpoint_url, headers=self.headers_get, params=querystring)
 
-        # TODO this is broken if we don't get a match, harden this
+        response.raise_for_status()
         return json.loads(response.text)
 
     def post_to_api(self, endpoint_url, data):
         response = requests.request("POST", endpoint_url, data=data, headers=self.headers_post)
 
-        # TODO this is broken if we don't get a match, harden this
+        response.raise_for_status()
         return json.loads(response.text)
 
     def detect_raw_audio(self, bytestream):
