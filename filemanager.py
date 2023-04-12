@@ -107,54 +107,56 @@ def cleanup_jpg_files(working_dir):
                 os.remove(os.path.join(root, filename))
 
 
-def makedir_if_absent(base_path, path):
+def makedir_if_absent(path):
     if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except (NotADirectoryError, FileNotFoundError):
-            new_path = base_path
-            relative_path = os.path.relpath(path, base_path)
-            relative_path_dirlist = relative_path.split(os.path.sep)
-            for directory in relative_path_dirlist:
-                new_path = os.path.join(new_path, re.sub(r'[^\w_. -]', '_', directory))
-            if not os.path.exists(new_path):
-                os.makedirs(new_path)
-
-    return path
+        os.makedirs(path)
 
 
 def reorganize_files(path, quarantine_dir):
     for root, dirs, files in os.walk(path):
         if not root.endswith(quarantine_dir):
             for name in files:
-                full_path = os.path.join(root, name)
-                organize_song_by_tags(path, full_path)
+                if os.path.splitext(name)[1] == '.mp3':
+                    full_path = os.path.join(root, name)
+                    organize_song_by_tags(path, full_path, quarantine_dir)
 
 
-def organize_song_by_tags(base_music_path, filepath):
+def organize_song_by_tags(base_music_path, filepath, quarantine_dir):
     file = music_tag.load_file(filepath)
     artist_name = str(file['artist'])
     album_name = str(file['album'])
+    artist_name_sanitized = sanitize_name_for_directory(artist_name)
+    album_name_sanitized = sanitize_name_for_directory(album_name)
+    makedir_if_absent(os.path.join(base_music_path, artist_name_sanitized))
+    makedir_if_absent(os.path.join(base_music_path, artist_name_sanitized, album_name_sanitized))
 
-    base_name = os.path.basename(filepath)
-    artist_dir = makedir_if_absent(base_music_path, os.path.join(base_music_path, artist_name))
-    album_dir = makedir_if_absent(base_music_path, os.path.join(base_music_path, artist_name, album_name))
-    directory_list = album_dir.split(os.sep)
-    if not check_song_location(directory_list, artist_name, album_name):
-        os.rename(filepath, os.path.join(album_dir, base_name))
+    if not check_song_location(filepath, artist_name_sanitized, artist_name_sanitized):
+        try:
+            os.rename(filepath, os.path.join(base_music_path, artist_name_sanitized, album_name_sanitized,
+                                             os.path.basename(filepath)))
+        except FileExistsError:
+            try:
+                makedir_if_absent(os.path.join(quarantine_dir, 'DUPLICATE_FILES'))
+                os.rename(filepath, os.path.join(quarantine_dir, 'DUPLICATE_FILES', os.path.basename(filepath)))
+            except FileExistsError:
+                return
 
 
-def check_song_location(directory_list, artist_name, album_name):
+def check_song_location(filepath, artist_name_sanitized, album_name_sanitized):
+    directory_list = filepath.split(os.sep)
+
     if len(directory_list) < 2:
         return False
 
-    if directory_list[-1] != album_name:
+    if directory_list[-1] != album_name_sanitized:
         return False
 
-    if directory_list[-2] != artist_name:
+    if directory_list[-2] != artist_name_sanitized:
         return False
 
     return True
 
 
 def sanitize_name_for_directory(name):
+    #TODO this check is too aggressive, need to rework
+    return re.sub(r'[^\w_. -]', '_', name)

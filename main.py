@@ -11,7 +11,7 @@ from filemanager import find_candidate_files, write_file_metadata, rename_file, 
 CLEANUP_DIRECTORY = "C:\\Users\\bennu\\OneDrive\\Desktop\\chelsea_phone_test"
 BAD_FILES_DIRNAME = "TuneTagger_BadFiles"
 bad_files_directory = os.path.join(CLEANUP_DIRECTORY, BAD_FILES_DIRNAME)
-makedir_if_absent(CLEANUP_DIRECTORY, bad_files_directory)
+makedir_if_absent(bad_files_directory)
 
 sm = ShazamManager()
 for filepath in find_candidate_files(CLEANUP_DIRECTORY, BAD_FILES_DIRNAME):
