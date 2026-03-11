@@ -3,6 +3,7 @@ import music_tag
 import eyed3
 from eyed3.id3.frames import ImageFrame
 import re
+import unicodedata
 
 
 def music_file_with_missing_attributes(filepath):
@@ -10,7 +11,7 @@ def music_file_with_missing_attributes(filepath):
         return False
 
     file = music_tag.load_file(filepath)
-    for key in ["title", "artist", "albumartist", "album", "genre", "year", "tracknumber"]:
+    for key in ["title", "artist", "albumartist", "album", "genre", "year"]:
         if not field_is_valid(file[key]):
             return True
     return False
@@ -118,28 +119,43 @@ def reorganize_files(path, quarantine_dir):
             for name in files:
                 if os.path.splitext(name)[1] == '.mp3':
                     full_path = os.path.join(root, name)
-                    organize_song_by_tags(path, full_path, quarantine_dir)
+                    try:
+                        organize_song_by_tags(path, full_path, quarantine_dir)
+                    except Exception:
+                        continue
 
 
 def organize_song_by_tags(base_music_path, filepath, quarantine_dir):
     file = music_tag.load_file(filepath)
     artist_name = str(file['artist'])
     album_name = str(file['album'])
-    artist_name_sanitized = sanitize_name_for_directory(artist_name)
-    album_name_sanitized = sanitize_name_for_directory(album_name)
+    track_name = str(file['title'])
+    if artist_name == '' or album_name == '' or track_name == '':
+        return
+    artist_name_sanitized = slugify(artist_name)
+    album_name_sanitized = slugify(album_name)
     makedir_if_absent(os.path.join(base_music_path, artist_name_sanitized))
     makedir_if_absent(os.path.join(base_music_path, artist_name_sanitized, album_name_sanitized))
 
     if not check_song_location(filepath, artist_name_sanitized, artist_name_sanitized):
         try:
             os.rename(filepath, os.path.join(base_music_path, artist_name_sanitized, album_name_sanitized,
-                                             os.path.basename(filepath)))
+                                             track_name + '.mp3'))
+        except FileNotFoundError:
+            try:
+                makedir_if_absent(os.path.join(quarantine_dir, 'BAD_METADATA'))
+                os.rename(filepath, os.path.join(quarantine_dir, 'BAD_METADATA', os.path.basename(filepath)))
+            except FileExistsError:
+                return
         except FileExistsError:
             try:
                 makedir_if_absent(os.path.join(quarantine_dir, 'DUPLICATE_FILES'))
                 os.rename(filepath, os.path.join(quarantine_dir, 'DUPLICATE_FILES', os.path.basename(filepath)))
             except FileExistsError:
                 return
+        except OSError:
+            makedir_if_absent(os.path.join(quarantine_dir, 'FILEPATH_ISSUE'))
+            os.rename(filepath, os.path.join(quarantine_dir, 'FILEPATH_ISSUE', os.path.basename(filepath)))
 
 
 def check_song_location(filepath, artist_name_sanitized, album_name_sanitized):
@@ -160,3 +176,20 @@ def check_song_location(filepath, artist_name_sanitized, album_name_sanitized):
 def sanitize_name_for_directory(name):
     #TODO this check is too aggressive, need to rework
     return re.sub(r'[^\w_. -]', '_', name)
+
+
+def slugify(value, allow_unicode=False):
+    """
+    Taken from https://github.com/django/django/blob/master/django/utils/text.py
+    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
+    dashes to single dashes. Remove characters that aren't alphanumerics,
+    underscores, or hyphens. Convert to lowercase. Also strip leading and
+    trailing whitespace, dashes, and underscores.
+    """
+    value = str(value)
+    if allow_unicode:
+        value = unicodedata.normalize('NFKC', value)
+    else:
+        value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
+    value = re.sub(r'[^\w\s-]', '', value.lower())
+    return re.sub(r'[-\s]+', '-', value).strip('-_')

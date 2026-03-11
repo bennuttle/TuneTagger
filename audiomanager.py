@@ -8,7 +8,6 @@ def bytestream_from_unknown_mp3(mp3_path):
     base_name_no_ext = base_name[:base_name.rindex('.')]
 
     full_song = AudioSegment.from_file(mp3_path)
-    #todo determine song length and cut into the middle? Luke Brian Song tagged incorrectly
     midsong_start_ms = full_song.duration_seconds * 1000 // 2
     midsong_end_ms = midsong_start_ms + 5000
     sample_5_seconds = full_song[midsong_start_ms:midsong_end_ms]

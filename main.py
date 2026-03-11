@@ -8,9 +8,12 @@ from audiomanager import bytestream_from_unknown_mp3
 from filemanager import find_candidate_files, write_file_metadata, rename_file, cleanup_raw_files, add_album_artwork, cleanup_jpg_files, move_problem_file, makedir_if_absent, reorganize_files
 
 
-CLEANUP_DIRECTORY = "C:\\Users\\bennu\\OneDrive\\Desktop\\chelsea_phone_test"
-BAD_FILES_DIRNAME = "TuneTagger_BadFiles"
+CLEANUP_DIRECTORY = "C:\\Users\\bennu\\Downloads\\Music"
+# CLEANUP_DIRECTORY = "D:\\Music"
+#CLEANUP_DIRECTORY = "C:\\Users\\bennu\\OneDrive\\Desktop\\speak_now"
+BAD_FILES_DIRNAME = "___TuneTagger_BadFiles"
 bad_files_directory = os.path.join(CLEANUP_DIRECTORY, BAD_FILES_DIRNAME)
+processed_subdirectory = "___Processed"
 makedir_if_absent(bad_files_directory)
 
 sm = ShazamManager()
@@ -46,6 +49,9 @@ for filepath in find_candidate_files(CLEANUP_DIRECTORY, BAD_FILES_DIRNAME):
     except pydub.exceptions.CouldntDecodeError:
         # might be fixed by the code change to from_file??
         print("WTF mate?")
+        move_problem_file(filepath, bad_files_directory)
+        continue
+    except OSError:
         move_problem_file(filepath, bad_files_directory)
         continue
 
